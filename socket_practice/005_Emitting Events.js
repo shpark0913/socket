@@ -86,3 +86,52 @@ socket.timeout(5000).emit("my-event", (err, response) => {
         console.log(response);
     }
 })
+
+
+/*
+Volatile events : underlying event가 미비되었을 때 전송되지 않는 이벤트
+*/
+socket.volatile.emit("hello", "might or might not be received");
+// 다른 예시 : client가 연결되지 않았을 때 이벤트 버리기 (디폴트 : reconnection 동안 events는 buffered 됨.)
+// Server
+io.on("connection", (socket) => {
+    console.log("connection");
+
+    socket.on("ping", (count) => {
+        console.log(count);
+    });
+});
+// Client
+let count = 0;
+setInterval(() => {
+    socket.volatile.emit("ping", ++count);
+}, 1000)
+/*
+Result:
+connect
+1
+2
+3
+4
+# the server is restarted, the client automatically reconnects
+connect
+9
+10
+11
+
+Without the volatile flag Result:
+connect
+1
+2
+3
+4
+# the server is restarted, the client automatically reconnects and sends its buffered events
+connect
+5
+6
+7
+8
+9
+10
+11
+*/
